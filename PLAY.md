@@ -22,32 +22,37 @@ ssh -N -L 19001:localhost:19001 mac-air
 - Dashboard：http://localhost:19001/dashboard.html  
   密碼：`pixeladmin`（見 `.env` 的 `DASHBOARD_PASSWORD`）
 
-## 已預劃房間／角色
+## 已預劃房間／六角色
 
-| 房間 | 誰在那 |
-|------|--------|
-| 休息房 | 日盤／WF／收工（預設睡覺、不亂走） |
-| 行情走廊 | 行情中樞 |
-| 夜盤房 | 夜盤交易員 |
-| 下單房 | 下單閘道 |
+| 房間 | 預設／值勤角色 |
+|------|----------------|
+| 休息房 | 非值勤人員（日盤／夜盤交易員、WF 分析師、收工書記待命時段；`roomBound` 房內走動＋聊天） |
+| 行情走廊 | `#0 行情中樞`（Quote Hub） |
+| 夜盤房 | `#1 夜盤交易員`（`burst_delta` 開窗期間） |
+| 下單房 | `#2 下單閘道`（Order Gateway） |
+| 日盤房 | `#3 日盤交易員`（`burst_delta_day` 開窗期間） |
+| 研究室 | `#4 WF 分析師`（Walk-Forward 執行中）／`#5 收工書記`（Post-Session 覆盤對帳中） |
 
 辦公室畫面會畫半透明色塊＋中文房名。
 
-- **休息房**：日盤／WF／收工預設在此；`roomBound` 只在房內走動＋常聊天。任何人被派進休息房後也會改成此行為。
-- **其他房**：預設 `holdStill` 待命（可用 AI 導演／API 移動）。
+- **休息房**：非值勤人員預設在此；`roomBound` 只在房內走動＋常聊天。任何人被派進休息房後也會立即寫入 `data/agents.json` 並鎖定權威房間，不受前端舊快照覆寫。
+- **其他房**：預設 `holdStill` 待命（由後端外掛 `execution/plugins/pixel_office_bridge.py` 透過 `/api/agent/:id/command` 驅動走位與對接）。
 
-## 接交易訊號（adapter bridge）
+## 接交易訊號（adapter bridge — Optional 外掛）
 
 `execution/.env`：
 
-```
+```ini
 PIXEL_OFFICE_BRIDGE=1
 PIXEL_OFFICE_URL=http://host.docker.internal:19001
 ```
 
-- adapter 啟動（Container Power boot）→ 行情中樞／下單閘道進房，其餘進休息房  
-- `POST /tasks/futures-session/start` → 夜盤進夜盤房／日盤進日盤房  
-- 送單 → Trader 短暫走進下單房再回崗位  
+- adapter 啟動（Container Power boot）→ `#0 行情中樞` 進「行情走廊」、`#2 下單閘道` 進「下單房」，其餘進「休息房」  
+- `POST /tasks/futures-session/start` → 夜盤進「夜盤房」／日盤進「日盤房」  
+- 盤中每 60s `⏱️` 行情心跳 → `#0 行情中樞` 走進當前盤房與交易員面對面報價，停留後回走廊  
+- 送單 → 交易員走進「下單房」與 `#2 下單閘道` 面對面確認，再回盤房  
+- 收盤（`session/stop` 或開倉窗結束）→ 該盤交易員回「休息房」（在途背景執行緒具防呆守衛不會拉回盤房）、`#5 收工書記` 進「研究室」覆盤，完成後回「休息房」  
+- Container Power `idle-and-down`／`down` → 全員回「休息房」
 
 手動測：`POST http://localhost:19001/api/agent/0/command` body `{"action":"move","tileX":5,"tileY":12,"msg":"測試"}`
 
