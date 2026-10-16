@@ -1,7 +1,9 @@
-# TMF Cyberpunk Pixel Office (`pixel-office-btc`)
+# TMF Cyberpunk Pixel Office (`cyberpunk-pixel-office`)
 
 台指期／微台（TMF）AI 交易系統專屬的**賽博龐克像素戰情室**選配外掛（Optional Plugin）。
-所有美術圖檔（辦公室底圖與 6 位賽博龐克角色 Sprite Sheet）與前後端程式碼皆為 **100% 專案自有（由 `scripts/` 腳本程序化生成）**，無任何第三方素材授權限制。
+本專案基於開源專案 **[BTCx100/pixel-office](https://github.com/BTCx100/pixel-office)**（源自 `piraminet/pixel-office` 與 Pablo Delucca 之 `pixel-agents` 概念）進行深度重構與在地化改造；所有美術圖檔（辦公室底圖與 6 位賽博龐克角色 Sprite Sheet）與繁體中文戰情室控制面板皆為 **100% 專案自製（由 `scripts/` 腳本程序化生成）**，無第三方付費圖塊授權限制。
+
+![TMF Cyberpunk Pixel Office 實機運行畫面](docs/media/cyberpunk-pixel-office-live.png)
 
 ---
 
@@ -44,3 +46,14 @@ node scripts/generate_cyberpunk_characters.js
 ```
 
 詳細連動事件與時間軸請見 [`PLAY.md`](PLAY.md)。
+
+---
+
+## 致謝與原始來源（Credits & Upstream Attribution）
+
+- **原始專案來源（Upstream Repository）**：[**BTCx100/pixel-office**](https://github.com/BTCx100/pixel-office)（forked from `piraminet/pixel-office`，靈感源自 Pablo Delucca 的 `pixel-agents`）。
+- **本倉庫改造內容**：
+  - 以零依賴 Node.js 程序化腳本（`scripts/generate_cyberpunk_office.js`、`scripts/generate_cyberpunk_characters.js`）100% 重新繪製 `640 × 800` 賽博龐克戰情室底圖與 6 位角色 Sprite Sheet，完全移除對第三方付費／外部圖塊之依賴。
+  - 全面改寫為繁體中文「**微台戰情室控制面板**」（含戰情編制、即時活動紀錄、手動房間調度與 HiDPI 2x 畫布渲染）。
+  - 封裝為跨架構 Docker Image（`ghcr.io/ai-20240303/cyberpunk-pixel-office:latest`），支援空 Volume 自動初始化與 REST API 房間座標防呆校準。
+
