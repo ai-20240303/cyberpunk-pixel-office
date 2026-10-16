@@ -1,0 +1,74 @@
+[
+  {
+    "id": 0,
+    "name": "行情中樞",
+    "role": "Quote Hub",
+    "color": 0,
+    "x": 144,
+    "y": 400,
+    "state": "patrol",
+    "active": true,
+    "room": "行情走廊",
+    "holdStill": false
+  },
+  {
+    "id": 1,
+    "name": "夜盤交易員",
+    "role": "Night（待命）",
+    "color": 1,
+    "x": 112,
+    "y": 656,
+    "state": "lounge",
+    "active": true,
+    "room": "休息房",
+    "holdStill": false
+  },
+  {
+    "id": 2,
+    "name": "下單閘道",
+    "role": "Order Gateway",
+    "color": 2,
+    "x": 528,
+    "y": 592,
+    "state": "patrol",
+    "active": true,
+    "room": "下單房",
+    "holdStill": false
+  },
+  {
+    "id": 3,
+    "name": "日盤交易員",
+    "role": "Day（待命）",
+    "color": 3,
+    "x": 176,
+    "y": 688,
+    "state": "lounge",
+    "active": true,
+    "room": "休息房",
+    "holdStill": false
+  },
+  {
+    "id": 4,
+    "name": "WF分析師",
+    "role": "WF（待命）",
+    "color": 4,
+    "x": 240,
+    "y": 656,
+    "state": "lounge",
+    "active": true,
+    "room": "休息房",
+    "holdStill": false
+  },
+  {
+    "id": 5,
+    "name": "收工書記",
+    "role": "Post（待命）",
+    "color": 5,
+    "x": 304,
+    "y": 688,
+    "state": "lounge",
+    "active": true,
+    "room": "休息房",
+    "holdStill": false
+  }
+]

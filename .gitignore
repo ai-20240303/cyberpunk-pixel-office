@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment / secrets
+.env
+.env.local
+clave
+clave.pub
+
+# Runtime data (keep data/map.json tracked in Git)
+PIXEL_DATA_DIR/
+data/*
+!data/map.json
+assets/oficina.png
+assets/background.png
+
+# Logs / tmp
+*.log
+*.tmp
+__MACOSX/
