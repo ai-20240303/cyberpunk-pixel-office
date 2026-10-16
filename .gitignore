@@ -14,10 +14,9 @@ pnpm-debug.log*
 clave
 clave.pub
 
-# Runtime data (keep data/map.json tracked in Git)
+# Runtime data (seeded from sample-data/ at startup)
 PIXEL_DATA_DIR/
-data/*
-!data/map.json
+data/
 assets/background.png
 
 # Logs / tmp

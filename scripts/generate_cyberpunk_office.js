@@ -13,7 +13,9 @@ const path = require('path');
 const zlib = require('zlib');
 
 const BASE_DIR = path.resolve(__dirname, '..');
-const MAP_JSON = path.join(BASE_DIR, 'data', 'map.json');
+const DATA_MAP_JSON = path.join(BASE_DIR, 'data', 'map.json');
+const SAMPLE_MAP_JSON = path.join(BASE_DIR, 'sample-data', 'map.tmf.json');
+const MAP_JSON = fs.existsSync(DATA_MAP_JSON) ? DATA_MAP_JSON : SAMPLE_MAP_JSON;
 const OUT_PNG = path.join(BASE_DIR, 'assets', 'oficina.png');
 const OUT_PLACEHOLDER = path.join(BASE_DIR, 'assets', 'oficina-placeholder.png');
 

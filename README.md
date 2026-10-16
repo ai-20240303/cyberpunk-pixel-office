@@ -55,6 +55,14 @@
 - **DevOps / SRE 監控中心（`PRESET=sre-noc`）**：
   - 接 GitHub Actions、Sentry 或 Datadog Webhook，有告警時值班工程師角色立刻衝進「戰情機房」入座處理。
 
+### 3. 與外部業務系統的三層拆分邊界（以微台交易系統為例）
+
+| 層級 | 所在倉庫 / 路徑 | 職責定位 |
+| :--- | :--- | :--- |
+| **通用戰情室引擎**<br>(Generic Engine) | 本倉庫 (`ai-20240303/cyberpunk-pixel-office`)<br>(`ghcr.io/ai-20240303/cyberpunk-pixel-office`) | **完全通用**。只認得 `map.json`、`agents.json` 與 `POST /api/agent/:id/command`，不依賴任何特定業務。 |
+| **業務轉接外掛**<br>(Domain Bridge Plugin) | 業務端倉庫（如 `n8n-workflow` 的 `ai-trading-view/execution/plugins/pixel_office_bridge.py`） | **業務專屬導演**。唯一同時知道「業務事件（如 `burst_delta` / `Quote Hub`）」以及「角色要走去哪間房」的選配轉接層。 |
+| **核心業務系統**<br>(Core Domain) | 業務端主程式（如 `broker_adapter.py` 或 n8n Workflow） | **純粹執行業務**。只負責拋出領域生命週期事件（`on_session_start`、`on_order_result` 等），不知道外面接的是什麼 HUD。 |
+
 ---
 
 ## 主題場景樣板（Presets）：預設微台指期貨，支援一鍵切換與自行擴充
