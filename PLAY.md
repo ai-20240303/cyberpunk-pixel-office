@@ -2,15 +2,17 @@
 
 Upstream: https://github.com/BTCx100/pixel-office
 
-## 啟動（建議 Mac；本機 npm 若壞可 tunnel）
+## 啟動（隨根目錄 `docker compose up -d` 常駐）
+
+Pixel Office 已整合至根目錄 `docker-compose.yml` 的 `pixel-office` 常駐服務（Port `19001`）：
 
 ```bash
-# on mac-air
-cd ~/Sources/n8n-workflow/ai-trading-view/plugins/pixel-office-btc
-cp -n .env.example .env   # PORT=19001
-mkdir -p data && cp -f sample-data/agents.tmf.json data/agents.json && cp -f sample-data/map.tmf.json data/map.json
-npm install && npm start
+# on mac-air（根目錄）
+cd ~/Sources/n8n-workflow
+docker compose up -d pixel-office
 ```
+
+> 若仍想在宿主機手動以 Node 啟動，請先 `docker compose stop pixel-office` 再執行 `./start.sh`。
 
 Windows 開發機開隧道後瀏覽：
 
@@ -44,7 +46,7 @@ ssh -N -L 19001:localhost:19001 mac-air
 
 ```ini
 PIXEL_OFFICE_BRIDGE=1
-PIXEL_OFFICE_URL=http://host.docker.internal:19001
+PIXEL_OFFICE_URL=http://pixel-office:19001
 ```
 
 - adapter 啟動（Container Power boot）→ `#0 行情中樞` 進「行情走廊」、`#2 下單閘道` 進「下單房」，其餘進「休息房」  
