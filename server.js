@@ -30,6 +30,18 @@ const MAP_PATH = dataPath('map.json');
 const COLLISION_PATH = dataPath('pixel_collision.json');
 const ROOMS_PATH = dataPath('pixel_rooms.json');
 const agentMessagePath = (id) => dataPath(`agent_${id}_message.txt`);
+const SAMPLE_MAP_PATH = path.join(__dirname, 'sample-data', 'map.tmf.json');
+const SAMPLE_AGENTS_PATH = path.join(__dirname, 'sample-data', 'agents.tmf.json');
+
+// 首次掛載空 Volume 時，自動從 sample-data 複製預設地圖與角色設定
+if (!fs.existsSync(MAP_PATH) && fs.existsSync(SAMPLE_MAP_PATH)) {
+  fs.copyFileSync(SAMPLE_MAP_PATH, MAP_PATH);
+  console.log('Seeded data/map.json from sample-data/map.tmf.json');
+}
+if (!fs.existsSync(AGENTS_PATH) && fs.existsSync(SAMPLE_AGENTS_PATH)) {
+  fs.copyFileSync(SAMPLE_AGENTS_PATH, AGENTS_PATH);
+  console.log('Seeded data/agents.json from sample-data/agents.tmf.json');
+}
 
 const readJSONFile = (filePath) => {
   try {

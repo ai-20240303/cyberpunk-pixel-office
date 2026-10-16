@@ -1,7 +1,7 @@
 {
-  "name": "tmf-cyberpunk-pixel-office",
+  "name": "cyberpunk-pixel-office",
   "version": "2.0.0",
-  "description": "100% first-party Cyberpunk Pixel Office visualizer plugin for AI TradingView TMF Futures",
+  "description": "100% first-party Cyberpunk Pixel Warroom HUD for AI Quantitative Trading",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
