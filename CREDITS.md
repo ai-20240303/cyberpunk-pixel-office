@@ -1,9 +1,9 @@
-# Credits & third-party assets
+# Credits & Asset Ownership
 
-| Component | Source | Notes |
-|-----------|--------|-------|
-| Concept & base inspiration | [pixel-agents](https://github.com/pablodelucca/pixel-agents) by Pablo Delucca | Project structure/assets inspired by his OpenClaw office visualizer. |
-| Character sprites | [MetroCity Free Topdown Character Pack](https://jik-a-4.itch.io/metrocity-free-topdown-character-pack) by JIK-a-4 | Included as provided in the pack. Keep the attribution when redistributing. |
-| Office tileset / background | [Office Interior Tileset (16x16)](https://donarg.itch.io/officetileset) by Donarg (USD $2) | Paid asset **not** stored in this repo. Drop your licensed export as `services/pixel/assets/oficina.png` to use it locally. |
+All pixel-art assets and runtime code in this plugin are **100% self-generated and owned by this project**:
 
-If you add more third-party art, extend this table and respect the licenses before publishing.
+| Component | Generator / Source | License / Ownership |
+|-----------|--------------------|---------------------|
+| Cyberpunk Office Background (`assets/oficina.png`, `assets/oficina-placeholder.png`) | Procedural Node.js generator (`scripts/generate_cyberpunk_office.js`) aligned to `data/map.json` | 100% First-Party / Proprietary |
+| 6 Cyberpunk Agent Sprites (`assets/characters/char_0.png` ~ `char_5.png`) | Procedural Node.js sprite generator (`scripts/generate_cyberpunk_characters.js`) | 100% First-Party / Proprietary |
+| TMF Bridge & Server (`execution/plugins/pixel_office_bridge.py`, `server.js`) | In-house implementation for AI TradingView | 100% First-Party / Proprietary |

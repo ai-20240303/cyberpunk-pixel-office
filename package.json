@@ -1,15 +1,18 @@
 {
-  "name": "pixel",
-  "version": "1.0.0",
-  "description": "",
+  "name": "tmf-cyberpunk-pixel-office",
+  "version": "2.0.0",
+  "description": "100% first-party Cyberpunk Pixel Office visualizer plugin for AI TradingView TMF Futures",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "generate:office": "node scripts/generate_cyberpunk_office.js",
+    "generate:chars": "node scripts/generate_cyberpunk_characters.js",
+    "generate:assets": "node scripts/generate_cyberpunk_office.js && node scripts/generate_cyberpunk_characters.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["tmf", "futures", "cyberpunk", "pixel-office"],
+  "author": "SimonWCC",
+  "license": "UNLICENSED",
+  "private": true,
   "type": "commonjs",
   "dependencies": {
     "dotenv": "^16.4.5",

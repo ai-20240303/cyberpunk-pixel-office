@@ -30,8 +30,6 @@ const MAP_PATH = dataPath('map.json');
 const COLLISION_PATH = dataPath('pixel_collision.json');
 const ROOMS_PATH = dataPath('pixel_rooms.json');
 const agentMessagePath = (id) => dataPath(`agent_${id}_message.txt`);
-const ARRIVED_OFFICE_PATH = dataPath('pep_arrived_office');
-const ARRIVED_RECEPTION_PATH = dataPath('pep_arrived_reception');
 
 const readJSONFile = (filePath) => {
   try {
@@ -70,7 +68,7 @@ const loadMapData = () => {
   }
   return {
     collision: readJSONFile(COLLISION_PATH),
-    rooms: readJSONFile(ROOMS_PATH)
+    rooms: readJSONFile(ROOMS_PATH),
   };
 };
 
@@ -88,7 +86,7 @@ const persistMapData = (updates = {}) => {
   const merged = {
     ...current,
     ...updates,
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
   };
   writeJSONFile(MAP_PATH, merged);
   if (merged.rooms && roomsChanged) {
@@ -101,45 +99,47 @@ const persistMapData = (updates = {}) => {
 };
 
 const app = express();
-const PORT = parseInt(process.env.PORT, 10) || 19000;
+const PORT = parseInt(process.env.PORT, 10) || 19001;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname), {
-  setHeaders(res, filePath) {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-store');
-    }
-  }
-}));
+app.use(
+  express.static(path.join(__dirname), {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html') || filePath.endsWith('.png')) {
+        res.setHeader('Cache-Control', 'no-store');
+      }
+    },
+  })
+);
 
-// Configuración inicial: todos los agentes disponibles, activados según checks
+// TMF 台指期戰情室預設 6 角色與 6 房間
 let config = {
   agents: [
-    { id: 0, name: "Dustin", role: "Agente Principal", color: 0, x: 320, y: 400, state: "idle", active: true },
-    { id: 1, name: "Pep", role: "Gestor de Correo", color: 1, x: 200, y: 300, state: "idle", active: true },
-    { id: 2, name: "Agente 3", role: "Sin rol", color: 2, x: 400, y: 500, state: "idle", active: false },
-    { id: 3, name: "Agente 4", role: "Sin rol", color: 3, x: 500, y: 400, state: "idle", active: false },
-    { id: 4, name: "Agente 5", role: "Sin rol", color: 4, x: 150, y: 600, state: "idle", active: false },
-    { id: 5, name: "Agente 6", role: "Sin rol", color: 5, x: 450, y: 200, state: "idle", active: false }
+    { id: 0, name: '數據領航員', role: 'Quote Hub', color: 0, x: 304, y: 400, state: 'patrol', active: true, room: '情報大廳', holdStill: false },
+    { id: 1, name: '夜盤交易員', role: 'Night（待命）', color: 1, x: 80, y: 592, state: 'lounge', active: true, room: '休息房', holdStill: false },
+    { id: 2, name: '首席交易官', role: 'Order Gateway', color: 2, x: 304, y: 208, state: 'patrol', active: true, room: '委託執行室', holdStill: false },
+    { id: 3, name: '日盤交易員', role: 'Day（待命）', color: 3, x: 144, y: 592, state: 'lounge', active: true, room: '休息房', holdStill: false },
+    { id: 4, name: 'WF分析師', role: 'WF（待命）', color: 4, x: 224, y: 592, state: 'lounge', active: true, room: '休息房', holdStill: false },
+    { id: 5, name: '績效稽核師', role: 'Post（待命）', color: 5, x: 304, y: 592, state: 'lounge', active: true, room: '休息房', holdStill: false },
   ],
   rooms: [
-    { name: "Recepción", x: 320, y: 700 },
-    { name: "Sala Principal", x: 320, y: 400 },
-    { name: "Sala Reuniones", x: 320, y: 100 },
-    { name: "Despacho", x: 550, y: 200 },
-    { name: "Cafetería", x: 100, y: 600 }
-  ]
+    { id: 1, name: '休息房', x: 4, y: 20, tiles: [] },
+    { id: 2, name: '情報大廳', x: 9, y: 12, tiles: [] },
+    { id: 3, name: '夜盤房', x: 3, y: 4, tiles: [] },
+    { id: 4, name: '委託執行室', x: 9, y: 4, tiles: [] },
+    { id: 5, name: '日盤房', x: 16, y: 4, tiles: [] },
+    { id: 6, name: '研究室', x: 16, y: 20, tiles: [] },
+  ],
 };
 
 const defaultAgents = JSON.parse(JSON.stringify(config.agents));
 const defaultRooms = JSON.parse(JSON.stringify(config.rooms));
 
-// Cargar configuración guardada
 try {
   const storedAgents = loadAgentsFromDisk();
   if (storedAgents) {
     config.agents = storedAgents;
-    console.log('Agentes cargados desde disco');
+    console.log('Loaded agents from disk');
   } else if (fs.existsSync(CONFIG_PATH)) {
     const savedConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
     if (Array.isArray(savedConfig.agents)) {
@@ -149,12 +149,9 @@ try {
       config.rooms = savedConfig.rooms;
     }
     persistAgents(config.agents);
-    console.log('Configuración cargada (legacy)');
-  } else {
-    console.log('Usando configuración inicial');
   }
 } catch (e) {
-  console.log('Usando configuración inicial');
+  console.log('Using default TMF agent configuration');
 }
 
 const initialMapData = loadMapData() || {};
@@ -166,7 +163,7 @@ if (Array.isArray(initialMapData.rooms) && initialMapData.rooms.length) {
 if (!fs.existsSync(MAP_PATH)) {
   persistMapData({
     rooms: initialMapData.rooms,
-    collision: initialMapData.collision || null
+    collision: initialMapData.collision || null,
   });
 }
 
@@ -175,13 +172,16 @@ if (!fs.existsSync(AGENTS_PATH)) {
 }
 
 app.get('/api/config', (req, res) => {
+  const mapData = loadMapData();
+  if (mapData && Array.isArray(mapData.rooms) && mapData.rooms.length) {
+    config.rooms = mapData.rooms;
+  }
   res.json({
     agents: config.agents,
-    rooms: config.rooms
+    rooms: config.rooms,
   });
 });
 
-console.log('Dashboard auth route ready');
 app.post('/api/auth/login', (req, res) => {
   const { password } = req.body || {};
   if (!DASHBOARD_PASSWORD) {
@@ -194,14 +194,23 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 app.post('/api/config', (req, res) => {
-  config = req.body || {};
-  if (!Array.isArray(config.agents)) {
-    config.agents = defaultAgents;
-  }
-  if (!Array.isArray(config.rooms)) {
-    config.rooms = defaultRooms;
-  }
-  // 保護後端權威房間與終點座標：當角色還有未消化的指令佇列，或前端傳回的房間與後端最後指派房間不符（例如背景分頁尚未拉取新指令）時，不讓前端舊快照覆蓋
+  const incoming = req.body || {};
+  const incomingAgents = Array.isArray(incoming.agents) ? incoming.agents : defaultAgents;
+  const currentMap = loadMapData() || {};
+  const incomingRoomsHaveTiles =
+    Array.isArray(incoming.rooms) &&
+    incoming.rooms.some((r) => Array.isArray(r.tiles) && r.tiles.length > 0);
+  const authoritativeRooms = incomingRoomsHaveTiles
+    ? incoming.rooms
+    : Array.isArray(currentMap.rooms) && currentMap.rooms.length
+    ? currentMap.rooms
+    : defaultRooms;
+
+  config = {
+    agents: incomingAgents,
+    rooms: authoritativeRooms,
+  };
+  // 保護後端權威房間與終點座標，避免背景分頁舊快照覆蓋後端最新房間
   for (const agent of config.agents) {
     const auth = agentAuthoritativeRoom[agent.id];
     const q = agentCommandQueues[agent.id] || [];
@@ -217,33 +226,33 @@ app.post('/api/config', (req, res) => {
   }
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
   persistAgents(config.agents);
-  persistMapData({ rooms: config.rooms });
-  console.log('Configuración guardada');
+  if (incomingRoomsHaveTiles) {
+    persistMapData({ rooms: config.rooms });
+  }
   res.json({ success: true, config });
 });
 
 app.post('/api/agent/:id/move', (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
   const { x, y, state } = req.body;
-  const agent = config.agents.find(a => a.id === id);
+  const agent = config.agents.find((a) => a.id === id);
   if (agent) {
     if (x !== undefined) agent.x = x;
     if (y !== undefined) agent.y = y;
     if (state) agent.state = state;
-    console.log(`[${agent.name}] Mover a (${x}, ${y})`);
     res.json({ success: true, agent });
   } else {
-    res.status(404).json({ error: 'Agente no encontrado' });
+    res.status(404).json({ error: 'Agent not found' });
   }
 });
 
-// API para obtener log de acciones
 app.get('/api/log', (req, res) => {
   try {
-    const logData = fs.readFileSync(LOG_PATH, 'utf8')
+    const logData = fs
+      .readFileSync(LOG_PATH, 'utf8')
       .split('\n')
-      .filter(line => line.trim())
-      .map(line => JSON.parse(line))
+      .filter((line) => line.trim())
+      .map((line) => JSON.parse(line))
       .slice(-50);
     res.json(logData);
   } catch (e) {
@@ -251,7 +260,6 @@ app.get('/api/log', (req, res) => {
   }
 });
 
-// API para limpiar log
 app.post('/api/log/clear', (req, res) => {
   try {
     fs.writeFileSync(LOG_PATH, '');
@@ -261,16 +269,13 @@ app.post('/api/log/clear', (req, res) => {
   }
 });
 
-// 指令佇列：同一角色可連續下多步（進下單房→回崗位）不被後指令覆蓋
-// 若佇列裡有過期の中間過程指令（例如 60s 進房交辦），丟棄過期的中間步驟，但若全數過期則保留最後一筆最終狀態指令（例如收窗／關機回休息房）
 const agentCommandQueues = {};
-// 記錄各角色最後一次由後端 API 下達的目標房間與座標；當前端擁有未拉取指令或正往新房間移動時，阻擋前端舊快照覆蓋後端最新房間
 const agentAuthoritativeRoom = {};
 const COMMAND_TTL_MS = 120000;
 const GRID_SIZE = 32;
 
 app.get('/api/agent/:id/command', (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
   const q = agentCommandQueues[id] || [];
   const now = Date.now();
   while (q.length > 1 && now - q[0].ts >= COMMAND_TTL_MS) {
@@ -285,32 +290,49 @@ app.get('/api/agent/:id/command', (req, res) => {
   return res.json(item.cmd);
 });
 
-// Endpoint para confirmar que el agente llegó físicamente al destino
 app.post('/api/agent/:id/arrived', (req, res) => {
-  const id = parseInt(req.params.id);
-  const { location } = req.body;
-  
-  // Crear archivo de señalización para el controller
-  if (location === 'office') {
-    fs.writeFileSync(ARRIVED_OFFICE_PATH, '1');
-  } else if (location === 'reception') {
-    fs.writeFileSync(ARRIVED_RECEPTION_PATH, '1');
-  }
-  
-  console.log(`[Llegada] Agente ${id} llegó a: ${location}`);
   res.json({ success: true });
 });
+
 app.post('/api/agent/:id/command/ack', (req, res) => {
-  // 佇列模式：GET 已消費，ack 僅相容舊 client
   res.json({ success: true });
 });
 
 app.post('/api/agent/:id/command', (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = parseInt(req.params.id, 10);
   const cmd = req.body || {};
+  if (cmd.action === 'move' && cmd.room) {
+    const mapData = loadMapData() || {};
+    const roomObj = (mapData.rooms || []).find((r) => r.name === cmd.room);
+    if (roomObj && Array.isArray(roomObj.tiles) && roomObj.tiles.length > 0) {
+      const tx = Number(cmd.tileX);
+      const ty = Number(cmd.tileY);
+      const inTargetRoom = roomObj.tiles.some((t) => t.x === tx && t.y === ty);
+      if (!inTargetRoom) {
+        const collision = mapData.collision;
+        const walkable = roomObj.tiles.filter((t) => {
+          const cell = collision?.[t.y]?.[t.x];
+          return cmd.sitAfter ? cell === 3 || cell === 0 : cell === 0;
+        });
+        const pool = walkable.length ? walkable : roomObj.tiles;
+        const avgX = pool.reduce((s, t) => s + t.x, 0) / pool.length;
+        const avgY = pool.reduce((s, t) => s + t.y, 0) / pool.length;
+        let best = pool[0];
+        let bestDist = Infinity;
+        for (const t of pool) {
+          const d = Math.abs(t.x - avgX) + Math.abs(t.y - avgY);
+          if (d < bestDist) {
+            bestDist = d;
+            best = t;
+          }
+        }
+        cmd.tileX = best.x;
+        cmd.tileY = best.y;
+      }
+    }
+  }
   if (!agentCommandQueues[id]) agentCommandQueues[id] = [];
 
-  // 若是回休息房（收窗／關機），清空該角色先前尚未消化的盤中交辦指令，避免被舊指令拉回工作房
   if (cmd.room === '休息房') {
     agentCommandQueues[id] = [];
   }
@@ -320,9 +342,8 @@ app.post('/api/agent/:id/command', (req, res) => {
     agentCommandQueues[id].shift();
   }
 
-  // 同步將最新目標房間與座標寫入 config.agents 與 agents.json，確保即使沒開瀏覽器或事後重整網頁也不會卡在舊房間
   if (cmd.action === 'move' && Array.isArray(config.agents)) {
-    const agent = config.agents.find(a => a.id === id);
+    const agent = config.agents.find((a) => a.id === id);
     if (agent) {
       if (cmd.tileX !== undefined && cmd.tileY !== undefined) {
         agent.x = Number(cmd.tileX) * GRID_SIZE + GRID_SIZE / 2;
@@ -346,72 +367,79 @@ app.post('/api/agent/:id/command', (req, res) => {
       try {
         persistAgents(config.agents);
         fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        const nowStr = new Date().toLocaleTimeString('zh-TW', {
+          hour12: false,
+          timeZone: 'Asia/Taipei',
+        });
+        const logEntry = {
+          time: nowStr,
+          agent: id,
+          action: cmd.action,
+          room: cmd.room || agent.room || '',
+          msg: cmd.msg || `前往 ${cmd.room || agent.room || '目標位置'}`,
+        };
+        fs.appendFileSync(LOG_PATH, JSON.stringify(logEntry) + '\n', 'utf8');
       } catch (e) {}
     }
   }
 
-  console.log(`[Comando] Agente ${id} (q=${agentCommandQueues[id].length}):`, cmd);
+  console.log(`[Command] Agent ${id} (q=${agentCommandQueues[id].length}):`, cmd);
   res.json({ success: true, queued: agentCommandQueues[id].length });
 });
+
 app.get('/api/messages', (req, res) => {
   const messages = {};
   for (let i = 0; i < 6; i++) {
     try {
       messages[i] = fs.readFileSync(agentMessagePath(i), 'utf8');
     } catch (e) {
-      messages[i] = "";
+      messages[i] = '';
     }
   }
   res.json(messages);
 });
 
-// API para guardar mapa de colisiones
 app.post('/api/collision', (req, res) => {
   try {
     persistMapData({ collision: req.body });
-    console.log('Collision map saved');
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// API para guardar salas
 app.post('/api/rooms', (req, res) => {
   try {
     const updated = persistMapData({ rooms: req.body });
     if (Array.isArray(updated.rooms)) {
       config.rooms = updated.rooms;
     }
-    console.log('Rooms saved');
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
+
 app.get('/api/collision', (req, res) => {
   try {
     const mapData = loadMapData();
     if (!mapData || !mapData.collision) {
-      throw new Error('Mapa no disponible');
+      throw new Error('Map collision data unavailable');
     }
     res.json(mapData.collision);
   } catch (e) {
-    res.status(500).json({ error: e.message || 'Mapa no disponible' });
+    res.status(500).json({ error: e.message || 'Map collision data unavailable' });
   }
 });
 
-// API para obtener salas
 app.get('/api/rooms', (req, res) => {
   try {
     const mapData = loadMapData();
     if (mapData && Array.isArray(mapData.rooms)) {
       return res.json(mapData.rooms);
     }
-  } catch (e) {
-    // ignore and fallback below
-  }
-  res.json(config.rooms.map(r => ({ name: r.name, x: r.x, y: r.y, tiles: [] })));
+  } catch (e) {}
+  res.json(config.rooms.map((r) => ({ name: r.name, x: r.x, y: r.y, tiles: [] })));
 });
 
 app.use((req, res) => {
@@ -419,6 +447,5 @@ app.use((req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Pixel Office v3 en http://0.0.0.0:${PORT}`);
-  console.log('Agentes activos:', config.agents.filter(a => a.active).map(a => a.name).join(', '));
+  console.log(`TMF Cyberpunk Pixel Office listening on http://0.0.0.0:${PORT}`);
 });

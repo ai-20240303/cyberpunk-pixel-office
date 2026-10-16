@@ -18,7 +18,6 @@ clave.pub
 PIXEL_DATA_DIR/
 data/*
 !data/map.json
-assets/oficina.png
 assets/background.png
 
 # Logs / tmp

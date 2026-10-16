@@ -229,15 +229,13 @@
                         </div>
                     </div>
 
-                        <!-- Configuración IA -->
+                        <!-- 系統說明 -->
                         <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-lg shrink-0">
-                            <h3 class="text-xs font-bold text-blue-400 mb-2 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                                AI API 設定
+                            <h3 class="text-xs font-bold text-sky-400 mb-2 flex items-center gap-2">
+                                <span>📡</span>
+                                <span>微台戰情室地圖規格</span>
                             </h3>
-                            <label class="block text-[10px] text-slate-400 mb-1">Gemini API 金鑰</label>
-                            <input type="password" id="geminiApiKey" onchange="saveApiKey()" spellcheck="false" class="w-full bg-slate-900 border border-slate-600 text-xs px-2 py-1.5 rounded text-white focus:outline-none focus:border-blue-400 mb-2" placeholder="貼上 API 金鑰">
-                            <p class="text-[9px] text-slate-500 leading-tight">使用模型： <strong class="text-slate-300">gemini-2.5-flash</strong><br>用於自然語言／語音指令。</p>
+                            <p class="text-[11px] text-slate-300 leading-relaxed">畫布尺寸：<strong class="text-white">20 × 25 格（640 × 800 px）</strong><br>儲存後將直接更新戰情室碰撞矩陣與 6 大房間範圍。</p>
                         </div>
             </div>
 
@@ -370,15 +368,8 @@
             
         }
 
-        // LOAD / SAVE from SERVER
+        // 載入與儲存伺服器設定
         async function loadAllData() {
-            // API Key (localStorage - personal)
-            const savedAPI = localStorage.getItem('pixel_gemini_api_key');
-            if (savedAPI) {
-                const el = document.getElementById('geminiApiKey');
-                if (el) el.value = savedAPI;
-            }
-
             try {
                 // Load from server
                 const [configRes, collisionRes, roomsRes] = await Promise.all([
@@ -396,8 +387,8 @@
                         x: a.x ? Math.floor(a.x / 32) : null,
                         y: a.y ? Math.floor(a.y / 32) : null,
                         role: a.role || '',
-                        room: '',
-                        personality: '勤奮',
+                        room: a.room || '',
+                        personality: a.personality || '勤奮',
                         visible: a.active !== false
                     }));
                 } else {
@@ -447,14 +438,15 @@
                     color: c.id,
                     x: c.x !== null ? c.x * 32 + 16 : 320,
                     y: c.y !== null ? c.y * 32 + 16 : 400,
-                    state: 'idle',
+                    room: c.room || '',
+                    state: c.room === '休息房' ? 'lounge' : 'patrol',
                     active: c.visible !== false
                 }));
 
                 await fetch('/api/config', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ agents: agentsConfig, rooms: aiRooms.map(r => ({ name: r.name, x: r.x || 0, y: r.y || 0 })) })
+                    body: JSON.stringify({ agents: agentsConfig, rooms: aiRooms })
                 });
 
                 // Save collision
@@ -553,8 +545,8 @@
                     
                     alert('設定已匯入並儲存到伺服器。');
                 } catch (error) {
-                    console.error('Error al parsear el archivo JSON', error);
-                    alert('Error al importar la configuración. Archivo no válido.');
+                    console.error('解析 JSON 設定檔失敗', error);
+                    alert('匯入設定失敗：檔案格式無效。');
                 }
             };
             reader.readAsText(file);
@@ -784,14 +776,13 @@
                 
                 let isMine = active.tiles.some(t => t.x===x && t.y===y);
                 
-                // Quitamos de otras salas primero si hiciera falta
                 aiRooms.forEach(room => {
                     if (room.id !== activeRoomId) {
                         const oldLen = room.tiles.length;
                         room.tiles = room.tiles.filter(t => !(t.x===x && t.y===y));
                         if(oldLen !== room.tiles.length) {
                              const counterEl = document.getElementById('roomCount_' + room.id);
-                             if (counterEl) counterEl.textContent = 'Celdas: ' + room.tiles.length;
+                             if (counterEl) counterEl.textContent = '格數：' + room.tiles.length;
                         }
                     }
                 });
@@ -806,9 +797,8 @@
                     node.style.border = '';
                 }
                 
-                // Actualizar solo el contador para optimizar
                 const activeCounter = document.getElementById('roomCount_' + activeRoomId);
-                if (activeCounter) activeCounter.textContent = 'Celdas: ' + active.tiles.length;
+                if (activeCounter) activeCounter.textContent = '格數：' + active.tiles.length;
             }
         }
 
