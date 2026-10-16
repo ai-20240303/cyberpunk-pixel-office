@@ -83,7 +83,7 @@
         <div id="viewMonitor" class="flex flex-col flex-1 overflow-hidden">
             <!-- 顯隱控制列 -->
             <div class="px-4 py-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs">
-                <span class="text-slate-400 font-medium">6 位微台 AI 代理即時動態</span>
+                <span id="panelSubtitle" class="text-slate-400 font-medium">6 位微台 AI 代理即時動態</span>
                 <label class="flex items-center gap-1.5 cursor-pointer select-none text-slate-300 hover:text-white">
                     <input type="checkbox" id="toggleRoomOverlay" checked class="accent-sky-500 rounded">
                     <span>顯示房間門牌</span>
@@ -137,7 +137,7 @@
         const COLS = 20;
         const ROWS = 25;
         const MAX_IDLE_FRAMES = 60 * 5;
-        const REST_ROOM_NAME = '休息房';
+        let REST_ROOM_NAME = '休息房';
         const REST_IDLE_FRAMES = 60 * 2;
 
         const ACTIONS = {
@@ -151,7 +151,18 @@
             OPENING_DOOR: 'opening_door'
         };
 
-        const AGENT_META = {
+        const DEFAULT_THEME_COLORS = ['#38bdf8', '#d946ef', '#f97316', '#facc15', '#10b981', '#ec4899'];
+        const DEFAULT_BADGES = [
+            'bg-sky-950/80 text-sky-300 border-sky-500/40',
+            'bg-fuchsia-950/80 text-fuchsia-300 border-fuchsia-500/40',
+            'bg-orange-950/80 text-orange-300 border-orange-500/40',
+            'bg-amber-950/80 text-amber-300 border-amber-500/40',
+            'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+            'bg-pink-950/80 text-pink-300 border-pink-500/40'
+        ];
+
+        // 預設微台指期貨 (PRESET=tmf) Metadata，啟動時會由 /api/config (agents.json & map.json) 動態覆寫
+        let AGENT_META = {
             0: { name: '數據領航員', role: 'Quote Hub', home: '情報大廳', color: '#38bdf8', badge: 'bg-sky-950/80 text-sky-300 border-sky-500/40' },
             1: { name: '夜盤交易員', role: 'Night Trader', home: '夜盤房', color: '#d946ef', badge: 'bg-fuchsia-950/80 text-fuchsia-300 border-fuchsia-500/40' },
             2: { name: '首席交易官', role: 'Order Gateway', home: '委託執行室', color: '#f97316', badge: 'bg-orange-950/80 text-orange-300 border-orange-500/40' },
@@ -160,7 +171,7 @@
             5: { name: '績效稽核師', role: 'Post Clerk', home: '研究室', color: '#ec4899', badge: 'bg-pink-950/80 text-pink-300 border-pink-500/40' }
         };
 
-        const AGENT_HOME_ROOM = {
+        let AGENT_HOME_ROOM = {
             0: '情報大廳',
             1: '夜盤房',
             2: '委託執行室',
@@ -169,7 +180,7 @@
             5: '研究室'
         };
 
-        const ROOM_HANDOFF_SEATS = {
+        let ROOM_HANDOFF_SEATS = {
             '夜盤房': { x: 3, y: 2 },
             '日盤房': { x: 16, y: 2 },
             '委託執行室': { x: 8, y: 4 },
@@ -177,12 +188,16 @@
             '情報大廳': { x: 6, y: 12 }
         };
 
-        const ROOM_HANDOFF_WALKAWAY = {
+        let ROOM_HANDOFF_WALKAWAY = {
             '夜盤房': { x: 2, y: 6 },
             '日盤房': { x: 17, y: 6 },
             '委託執行室': { x: 11, y: 2 },
             '研究室': { x: 15, y: 19 },
             '情報大廳': { x: 9, y: 12 }
+        };
+
+        let ROOM_DWELL_MS = {
+            '委託執行室': 4000
         };
 
         const ROOM_COLORS = [
@@ -195,7 +210,7 @@
         ];
         window.SHOW_ROOM_OVERLAY = true;
 
-        const ROLE_IDLE_LINES = {
+        let ROLE_IDLE_LINES = {
             0: {
                 post: ['數據串流穩定📡', '監聽市場脈動中🎧', '買賣價差正常📊', '準備派送最新報價⚡', '連線品質極佳✅'],
                 rest: ['今天數據量真驚人📡', '暫時離線喘口氣☕', '喝口水潤潤嗓💧', '收盤的大廳真安靜✨']
@@ -515,7 +530,7 @@
                     && room !== REST_ROOM_NAME
                     && ((AGENT_HOME_ROOM[this.id] && room !== AGENT_HOME_ROOM[this.id]) || this.sitAfterOnArrive)
                 );
-                const dwellMs = room === '委託執行室' ? 4000 : (isHandoffVisit ? 3200 : 1200);
+                const dwellMs = ROOM_DWELL_MS[room] || (isHandoffVisit ? 3200 : 1200);
                 this.commandDwellUntil = Date.now() + dwellMs;
                 if (room === REST_ROOM_NAME) {
                     this.commandSeated = false;
@@ -984,15 +999,56 @@
                         window.roomsInfo = roomsData.map((r, i) => ({
                             id: r.id != null ? r.id : i + 1,
                             name: r.name,
+                            isRestRoom: !!r.isRestRoom,
+                            handoffSeat: r.handoffSeat || null,
+                            handoffWalkaway: r.handoffWalkaway || null,
+                            dwellMs: r.dwellMs || null,
                             x: r.tiles && r.tiles.length > 0 ? r.tiles[0].x : (r.x || 0),
                             y: r.tiles && r.tiles.length > 0 ? r.tiles[0].y : (r.y || 0),
                             tiles: r.tiles || []
                         }));
+                        window.roomsInfo.forEach(r => {
+                            if (r.isRestRoom && r.name) REST_ROOM_NAME = r.name;
+                            if (r.handoffSeat) ROOM_HANDOFF_SEATS[r.name] = r.handoffSeat;
+                            if (r.handoffWalkaway) ROOM_HANDOFF_WALKAWAY[r.name] = r.handoffWalkaway;
+                            if (r.dwellMs) ROOM_DWELL_MS[r.name] = r.dwellMs;
+                        });
                     }
                 } catch (_) {}
 
                 const response = await fetch('/api/config');
                 const config = await response.json();
+
+                if (config.scene) {
+                    if (config.scene.title) document.title = config.scene.title;
+                    if (config.scene.restRoom) REST_ROOM_NAME = config.scene.restRoom;
+                    const subtitleEl = document.getElementById('panelSubtitle');
+                    if (subtitleEl && config.scene.panelSubtitle) {
+                        subtitleEl.textContent = config.scene.panelSubtitle;
+                    }
+                }
+
+                if (Array.isArray(config.agents)) {
+                    config.agents.forEach((a, idx) => {
+                        const id = a.id != null ? a.id : idx;
+                        const prevMeta = AGENT_META[id] || {};
+                        const homeRoom = a.homeRoom || prevMeta.home || a.room || REST_ROOM_NAME;
+                        AGENT_META[id] = {
+                            name: a.name || prevMeta.name || `角色 ${id + 1}`,
+                            role: a.role || prevMeta.role || '',
+                            home: homeRoom,
+                            color: a.themeColor || prevMeta.color || DEFAULT_THEME_COLORS[id % DEFAULT_THEME_COLORS.length],
+                            badge: a.badge || prevMeta.badge || DEFAULT_BADGES[id % DEFAULT_BADGES.length]
+                        };
+                        AGENT_HOME_ROOM[id] = homeRoom;
+                        if (a.idleLines && (Array.isArray(a.idleLines.post) || Array.isArray(a.idleLines.rest))) {
+                            ROLE_IDLE_LINES[id] = {
+                                post: Array.isArray(a.idleLines.post) && a.idleLines.post.length ? a.idleLines.post : (ROLE_IDLE_LINES[id]?.post || ['執勤待命中…']),
+                                rest: Array.isArray(a.idleLines.rest) && a.idleLines.rest.length ? a.idleLines.rest : (ROLE_IDLE_LINES[id]?.rest || ['休息待命中☕'])
+                            };
+                        }
+                    });
+                }
 
                 for (let i = 0; i < 6; i++) {
                     const charConfig = config.agents?.find(a => a.id === i);
@@ -1041,8 +1097,13 @@
                     window.characters.push(char);
                 }
 
+                const badge = document.getElementById('selectedAgentBadge');
+                const selectedChar = window.characters.find(c => c.id === selectedDispatchAgentId) || window.characters[0];
+                if (badge && selectedChar) badge.textContent = `已選：${selectedChar.name}`;
+
                 renderDispatchButtons();
                 renderAgentStatusCards();
+                renderLogFilterButtons();
             } catch (e) {
                 console.error('載入戰情室設定失敗:', e);
             }

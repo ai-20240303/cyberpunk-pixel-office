@@ -3,72 +3,178 @@
     "id": 0,
     "name": "數據領航員",
     "role": "Quote Hub",
+    "homeRoom": "情報大廳",
     "color": 0,
+    "themeColor": "#38bdf8",
+    "badge": "bg-sky-950/80 text-sky-300 border-sky-500/40",
     "x": 304,
     "y": 400,
     "state": "patrol",
     "active": true,
     "room": "情報大廳",
-    "holdStill": false
+    "holdStill": false,
+    "idleLines": {
+      "post": [
+        "數據串流穩定📡",
+        "監聽市場脈動中🎧",
+        "買賣價差正常📊",
+        "準備派送最新報價⚡",
+        "連線品質極佳✅"
+      ],
+      "rest": [
+        "今天數據量真驚人📡",
+        "暫時離線喘口氣☕",
+        "喝口水潤潤嗓💧",
+        "收盤的大廳真安靜✨"
+      ]
+    }
   },
   {
     "id": 1,
     "name": "夜盤交易員",
     "role": "Night（待命）",
+    "homeRoom": "夜盤房",
     "color": 1,
+    "themeColor": "#d946ef",
+    "badge": "bg-fuchsia-950/80 text-fuchsia-300 border-fuchsia-500/40",
     "x": 80,
     "y": 592,
     "state": "lounge",
     "active": true,
     "room": "休息房",
-    "holdStill": false
+    "holdStill": false,
+    "idleLines": {
+      "post": [
+        "緊盯夜間動能突破⚡",
+        "買賣力道累積中👀",
+        "觀察波段偏離度📈",
+        "波動率開始放大了🔥",
+        "耐心等待突破確認🎯"
+      ],
+      "rest": [
+        "養精蓄銳等夜盤開戰🌙",
+        "昨晚那波行情真刺激⚡",
+        "來杯濃縮咖啡提神☕",
+        "夜貓子的主場快到了🦉"
+      ]
+    }
   },
   {
     "id": 2,
     "name": "首席交易官",
     "role": "Order Gateway",
+    "homeRoom": "委託執行室",
     "color": 2,
+    "themeColor": "#f97316",
+    "badge": "bg-orange-950/80 text-orange-300 border-orange-500/40",
     "x": 304,
     "y": 208,
     "state": "patrol",
     "active": true,
     "room": "委託執行室",
-    "holdStill": false
+    "holdStill": false,
+    "idleLines": {
+      "post": [
+        "風控佇列待命中🛡️",
+        "委託通道零延遲✅",
+        "交易權限簽章就緒🔑",
+        "嚴格把關每一筆委託🔒",
+        "部位與風險水位正常📊"
+      ],
+      "rest": [
+        "通道上鎖，喝杯熱茶🍵",
+        "今日零異常委託，完美✅",
+        "休息時也要顧好風控🔑",
+        "無部位一身輕🌿"
+      ]
+    }
   },
   {
     "id": 3,
     "name": "日盤交易員",
     "role": "Day（待命）",
+    "homeRoom": "日盤房",
     "color": 3,
+    "themeColor": "#facc15",
+    "badge": "bg-amber-950/80 text-amber-300 border-amber-500/40",
     "x": 144,
     "y": 592,
     "state": "lounge",
     "active": true,
     "room": "休息房",
-    "holdStill": false
+    "holdStill": false,
+    "idleLines": {
+      "post": [
+        "鎖定開盤關鍵區間☀️",
+        "早盤量能持續放大📈",
+        "突破不追高，等確認🎯",
+        "雙軌策略同步監控中👀",
+        "嚴守紀律與停損防線⏱️"
+      ],
+      "rest": [
+        "早盤收工後特別輕鬆☕",
+        "早起的鳥兒有行情吃🐦",
+        "復盤一下早上的進場點📝",
+        "補充咖啡因，明日再戰☀️"
+      ]
+    }
   },
   {
     "id": 4,
     "name": "WF分析師",
     "role": "WF（待命）",
+    "homeRoom": "研究室",
     "color": 4,
+    "themeColor": "#10b981",
+    "badge": "bg-emerald-950/80 text-emerald-300 border-emerald-500/40",
     "x": 224,
     "y": 592,
     "state": "lounge",
     "active": true,
     "room": "休息房",
-    "holdStill": false
+    "holdStill": false,
+    "idleLines": {
+      "post": [
+        "檢驗樣本外穩健度📐",
+        "評估持倉時間與冷卻期⏱️",
+        "拒絕過擬合，嚴審模型🔬",
+        "基準模型交叉比對中📊"
+      ],
+      "rest": [
+        "等待下一輪滾動尋優📊",
+        "極端行情壓力測試中🧪",
+        "參數穩定比高報酬重要📐",
+        "檢視本週風險報酬比📈"
+      ]
+    }
   },
   {
     "id": 5,
     "name": "績效稽核師",
     "role": "Post（待命）",
+    "homeRoom": "研究室",
     "color": 5,
+    "themeColor": "#ec4899",
+    "badge": "bg-pink-950/80 text-pink-300 border-pink-500/40",
     "x": 304,
     "y": 592,
     "state": "lounge",
     "active": true,
     "room": "休息房",
-    "holdStill": false
+    "holdStill": false,
+    "idleLines": {
+      "post": [
+        "交叉比對成交與歷史明細🔍",
+        "撰寫盤後績效歸因報告✍️",
+        "核對滑價與執行品質📊",
+        "準備發送盤後結算報告📨"
+      ],
+      "rest": [
+        "帳目一筆不差，舒服📒",
+        "等收盤再去研究室對帳☕",
+        "績效指標都更新好了✅",
+        "歸檔資料整理完畢🗂️"
+      ]
+    }
   }
 ]

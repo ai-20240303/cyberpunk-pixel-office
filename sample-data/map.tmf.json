@@ -1,9 +1,17 @@
 {
+  "preset": "tmf",
+  "scene": {
+    "title": "微台戰情室 · TMF Cyberpunk Pixel Office",
+    "dashboardTitle": "微台戰情室控制台",
+    "panelSubtitle": "6 位微台 AI 代理即時動態",
+    "restRoom": "休息房"
+  },
   "rooms": [
     {
       "id": 1,
       "name": "休息房",
       "color": "#64748b",
+      "isRestRoom": true,
       "tiles": [
         {
           "x": 1,
@@ -299,6 +307,8 @@
       "id": 2,
       "name": "情報大廳",
       "color": "#0ea5e9",
+      "handoffSeat": { "x": 6, "y": 12 },
+      "handoffWalkaway": { "x": 9, "y": 12 },
       "tiles": [
         {
           "x": 1,
@@ -882,6 +892,8 @@
       "id": 3,
       "name": "夜盤房",
       "color": "#a855f7",
+      "handoffSeat": { "x": 3, "y": 2 },
+      "handoffWalkaway": { "x": 2, "y": 6 },
       "tiles": [
         {
           "x": 1,
@@ -1029,6 +1041,9 @@
       "id": 4,
       "name": "委託執行室",
       "color": "#f97316",
+      "handoffSeat": { "x": 8, "y": 4 },
+      "handoffWalkaway": { "x": 11, "y": 2 },
+      "dwellMs": 4000,
       "tiles": [
         {
           "x": 7,
@@ -1204,6 +1219,8 @@
       "id": 1792079841970,
       "name": "日盤房",
       "color": "#8b5cf6",
+      "handoffSeat": { "x": 16, "y": 2 },
+      "handoffWalkaway": { "x": 17, "y": 6 },
       "tiles": [
         {
           "x": 14,
@@ -1351,6 +1368,8 @@
       "id": 1792079885160,
       "name": "研究室",
       "color": "#06b6d4",
+      "handoffSeat": { "x": 16, "y": 22 },
+      "handoffWalkaway": { "x": 15, "y": 19 },
       "tiles": [
         {
           "x": 14,

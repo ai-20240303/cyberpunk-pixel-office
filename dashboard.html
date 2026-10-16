@@ -381,6 +381,9 @@
                 // 1. Chars from server
                 if (configRes && configRes.ok) {
                     const config = await configRes.json();
+                    if (config.scene && config.scene.dashboardTitle) {
+                        document.title = config.scene.dashboardTitle;
+                    }
                     charConfig = config.agents.map(a => ({
                         id: a.id,
                         name: a.name,
@@ -388,6 +391,10 @@
                         y: a.y ? Math.floor(a.y / 32) : null,
                         role: a.role || '',
                         room: a.room || '',
+                        homeRoom: a.homeRoom,
+                        themeColor: a.themeColor,
+                        badge: a.badge,
+                        idleLines: a.idleLines,
                         personality: a.personality || '勤奮',
                         visible: a.active !== false
                     }));
@@ -436,6 +443,10 @@
                     name: c.name,
                     role: c.role,
                     color: c.id,
+                    homeRoom: c.homeRoom,
+                    themeColor: c.themeColor,
+                    badge: c.badge,
+                    idleLines: c.idleLines,
                     x: c.x !== null ? c.x * 32 + 16 : 320,
                     y: c.y !== null ? c.y * 32 + 16 : 400,
                     room: c.room || '',
