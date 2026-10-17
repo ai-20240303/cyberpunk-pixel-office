@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>微台戰情室 · TMF Cyberpunk Pixel Office</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="apple-touch-icon" href="assets/favicon.png">
     <style>
         body {
             margin: 0;
             padding: 20px;
+            box-sizing: border-box;
             background: #0b0f19;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
+            align-items: center;
             gap: 20px;
             min-height: 100vh;
             font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
@@ -106,6 +109,13 @@
 
         <!-- 分頁 2：活動紀錄 -->
         <div id="viewLog" class="hidden flex-col flex-1 overflow-hidden">
+            <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs">
+                <label class="flex items-center gap-1.5 cursor-pointer select-none text-slate-200 hover:text-white font-medium">
+                    <input type="checkbox" id="toggleTradeOnlyLog" checked class="accent-sky-500 rounded">
+                    <span>僅顯示買賣 (BUY / SELL)</span>
+                </label>
+                <span id="logCountBadge" class="text-[11px] text-slate-400">0 筆</span>
+            </div>
             <div class="flex-1 p-4 overflow-y-auto bg-slate-950" id="logContainer">
                 <div id="logEntries" class="font-mono text-xs flex flex-col gap-2"></div>
             </div>
@@ -139,6 +149,10 @@
         const MAX_IDLE_FRAMES = 60 * 5;
         let REST_ROOM_NAME = '休息房';
         const REST_IDLE_FRAMES = 60 * 2;
+        const urlSleepSec = Number(new URLSearchParams(window.location.search).get('sleepSec'));
+        const REST_SLEEP_AFTER_MS = Number.isFinite(urlSleepSec) && urlSleepSec > 0
+            ? urlSleepSec * 1000
+            : 30 * 60 * 1000; // 進入休息房滿 30 分鐘未出任務即進入睡眠
 
         const ACTIONS = {
             IDLE: 'idle',
@@ -436,21 +450,120 @@
                 this.state = 'idle';
                 this.defaultRoom = REST_ROOM_NAME;
                 this.personality = '勤奮';
+                this.restEnteredAt = 0;
+                this.sleeping = false;
+                this.goingToSleep = false;
+            }
+
+            wakeUp() {
+                this.goingToSleep = false;
+                if (this.sleeping) {
+                    this.sleeping = false;
+                    this.sitting = false;
+                }
+            }
+
+            findNearestRestChair(fromX, fromY) {
+                const restRoom = (window.roomsInfo || []).find(r => r.name === REST_ROOM_NAME || r.isRestRoom);
+                const candidateChairs = [];
+                if (restRoom && Array.isArray(restRoom.tiles)) {
+                    for (const t of restRoom.tiles) {
+                        if (COLLISION_MAP[t.y]?.[t.x] === 3) {
+                            candidateChairs.push(t);
+                        }
+                    }
+                }
+                if (!candidateChairs.length) {
+                    return this.findNearestFreeChair(fromX, fromY);
+                }
+
+                let best = null;
+                let minDistance = Infinity;
+                for (const t of candidateChairs) {
+                    const occupied = window.characters.some(c =>
+                        c !== this &&
+                        (c.action === ACTIONS.SITTING || c.sleeping) &&
+                        Math.floor(c.x / GRID_SIZE) === t.x &&
+                        Math.floor(c.y / GRID_SIZE) === t.y
+                    );
+                    const reserved = window.characters.some(c =>
+                        c !== this &&
+                        c.path && c.path.length > 0 &&
+                        c.path[c.path.length - 1].x === t.x &&
+                        c.path[c.path.length - 1].y === t.y
+                    );
+                    if (!occupied && !reserved) {
+                        const dist = Math.abs(fromX - t.x) + Math.abs(fromY - t.y);
+                        if (dist < minDistance) {
+                            minDistance = dist;
+                            best = { x: t.x, y: t.y };
+                        }
+                    }
+                }
+                return best;
+            }
+
+            finalizeSleepOnChair() {
+                this.goingToSleep = false;
+                this.sleeping = true;
+                this.state = 'sleep';
+                this.isTalking = false;
+                this.bubbleText = '';
+                this.bubbleTimer = 0;
+                this.path = [];
+                this.isWaiting = false;
+                this.action = ACTIONS.SITTING;
+                this.sitting = true;
+                this.faceNearestDesk();
+                this.actionTimer = 0;
+            }
+
+            enterSleepMode() {
+                if (this.sleeping || this.goingToSleep) return;
+                const tx = Math.floor(this.x / GRID_SIZE);
+                const ty = Math.floor(this.y / GRID_SIZE);
+                // 若已經坐在椅子上，直接睡著
+                if (COLLISION_MAP[ty]?.[tx] === 3) {
+                    this.finalizeSleepOnChair();
+                    return;
+                }
+                // 否則先找休息房內最近的空位椅子走過去，坐下後才睡著
+                const chair = this.findNearestRestChair(tx, ty);
+                if (chair) {
+                    this.isTalking = false;
+                    this.bubbleText = '';
+                    this.bubbleTimer = 0;
+                    this.moveTo(chair.x * GRID_SIZE + GRID_SIZE / 2, chair.y * GRID_SIZE + GRID_SIZE / 2);
+                    if (this.path && this.path.length > 0) {
+                        this.goingToSleep = true;
+                        return;
+                    }
+                }
+                this.finalizeSleepOnChair();
             }
 
             enterRestLounge() {
-                const alreadyLounge = this.defaultRoom === REST_ROOM_NAME
+                const alreadyInRest = this.defaultRoom === REST_ROOM_NAME
                     && this.roomBound
                     && !this.holdStill
-                    && this.state === 'lounge';
+                    && (this.state === 'lounge' || this.state === 'sleep');
                 this.defaultRoom = REST_ROOM_NAME;
                 this.roomBound = true;
                 this.holdStill = false;
                 this.isWaiting = false;
+                if (!this.restEnteredAt) {
+                    this.restEnteredAt = Date.now();
+                }
+                if (this.sleeping) {
+                    this.state = 'sleep';
+                    this.action = ACTIONS.SITTING;
+                    this.sitting = true;
+                    return;
+                }
                 this.state = 'lounge';
                 this.personality = '好動';
                 this.sitting = false;
-                if (!alreadyLounge && this.action !== ACTIONS.WALKING) {
+                if (!alreadyInRest && this.action !== ACTIONS.WALKING) {
                     this.action = ACTIONS.IDLE;
                     this.actionTimer = 0;
                     this.nextActionTime = 40 + Math.random() * 80;
@@ -463,6 +576,8 @@
                     this.enterRestLounge();
                     return;
                 }
+                this.wakeUp();
+                this.restEnteredAt = 0;
                 this.defaultRoom = room;
                 this.roomBound = true;
                 this.holdStill = false;
@@ -560,10 +675,18 @@
 
             syncRestLoungeState() {
                 if (this.isWaiting && this.action === ACTIONS.WALKING) return;
-                if (this.roomBound && this.defaultRoom && this.defaultRoom !== REST_ROOM_NAME) return;
+                if (this.roomBound && this.defaultRoom && this.defaultRoom !== REST_ROOM_NAME) {
+                    this.restEnteredAt = 0;
+                    if (this.sleeping) this.wakeUp();
+                    return;
+                }
                 if (this.defaultRoom === REST_ROOM_NAME) {
+                    if (!this.restEnteredAt) this.restEnteredAt = Date.now();
                     if (!this.roomBound || this.holdStill) {
                         this.enterRestLounge();
+                    }
+                    if (!this.sleeping && !this.goingToSleep && this.action !== ACTIONS.WALKING && (Date.now() - this.restEnteredAt >= REST_SLEEP_AFTER_MS)) {
+                        this.enterSleepMode();
                     }
                 }
             }
@@ -572,6 +695,13 @@
                 this.frame++;
                 this.actionTimer++;
                 this.syncRestLoungeState();
+
+                if (this.sleeping) {
+                    this.action = ACTIONS.SITTING;
+                    this.sitting = true;
+                    this.actionTimer = 0;
+                    return;
+                }
 
                 if (this.isHoldingAtHandoff() && this.action !== ACTIONS.WALKING) {
                     this.actionTimer = 0;
@@ -649,9 +779,17 @@
                                 );
 
                                 if (chairOccupied) {
-                                    const freeChair = this.findNearestFreeChair(targetTile.x, targetTile.y);
+                                    const freeChair = this.goingToSleep
+                                        ? this.findNearestRestChair(targetTile.x, targetTile.y)
+                                        : this.findNearestFreeChair(targetTile.x, targetTile.y);
                                     if (freeChair) {
+                                        const wasGoingToSleep = this.goingToSleep;
                                         this.moveTo(freeChair.x * GRID_SIZE + GRID_SIZE / 2, freeChair.y * GRID_SIZE + GRID_SIZE / 2);
+                                        this.goingToSleep = wasGoingToSleep;
+                                        return;
+                                    }
+                                    if (this.goingToSleep) {
+                                        this.finalizeSleepOnChair();
                                         return;
                                     }
                                     this.action = ACTIONS.IDLE;
@@ -662,6 +800,11 @@
                                     return;
                                 }
 
+                                if (this.goingToSleep) {
+                                    this.finalizeSleepOnChair();
+                                    return;
+                                }
+
                                 this.action = ACTIONS.SITTING;
                                 this.sitting = true;
                                 this.actionTimer = 0;
@@ -669,6 +812,10 @@
                                 this.applyArriveSettle();
                                 this.faceNearestDesk();
                             } else {
+                                if (this.goingToSleep) {
+                                    this.finalizeSleepOnChair();
+                                    return;
+                                }
                                 this.action = ACTIONS.IDLE;
                                 this.actionTimer = 0;
                                 this.nextActionTime = 100 + Math.random() * 200;
@@ -869,6 +1016,7 @@
             }
 
             moveTo(pixelX, pixelY) {
+                this.wakeUp();
                 const startTileX = Math.floor(this.x / GRID_SIZE);
                 const startTileY = Math.floor(this.y / GRID_SIZE);
                 let endTileX = Math.max(0, Math.min(COLS - 1, Math.floor(pixelX / GRID_SIZE)));
@@ -912,40 +1060,93 @@
 
             draw(spriteManager) {
                 spriteManager.drawCharacter(this.x, this.y, this.action, this.frame, this.facing, this);
+            }
 
-                if (this.isTalking && this.bubbleText) {
-                    ctx.save();
-                    const bx = Math.round(this.x);
-                    const by = Math.round(this.y - 68);
+            /** Floating Zzz animation when character is sleeping in the rest room. */
+            drawSleepZzz() {
+                if (!this.sleeping) return;
+                ctx.save();
+                const baseX = Math.round(this.x + 10);
+                const baseY = Math.round(this.y - (32 * SCALE) + 10);
+                const letters = ['z', 'Z', 'Z'];
+                for (let i = 0; i < letters.length; i++) {
+                    const phase = ((this.frame * 0.03) + i * 0.33) % 1;
+                    const floatY = baseY - phase * 22 - i * 4;
+                    const floatX = baseX + Math.sin((this.frame * 0.06) + i) * 3 + i * 5;
+                    const alpha = phase < 0.2 ? phase / 0.2 : (1 - phase) / 0.8;
+                    const fontSize = 10 + i * 2;
+                    ctx.font = `bold ${fontSize}px "Microsoft JhengHei", monospace`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = `rgba(125, 211, 252, ${Math.max(0.15, alpha * 0.95).toFixed(2)})`;
+                    ctx.strokeStyle = `rgba(15, 23, 42, ${Math.max(0.2, alpha * 0.9).toFixed(2)})`;
+                    ctx.lineWidth = 2.5;
+                    const clampedY = Math.max(10, floatY);
+                    ctx.strokeText(letters[i], floatX, clampedY);
+                    ctx.fillText(letters[i], floatX, clampedY);
+                }
+                ctx.restore();
+            }
+
+            /** Speech bubble: above head when space allows, otherwise below feet (avoids canvas clip). */
+            drawSpeechBubble() {
+                if (!this.isTalking || !this.bubbleText) return;
+
+                ctx.save();
+                const paddingX = 8;
+                const paddingY = 5;
+                ctx.font = 'bold 12px "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif';
+                const metrics = ctx.measureText(this.bubbleText);
+                const width = Math.ceil(metrics.width) + paddingX * 2;
+                const height = 16 + paddingY * 2;
+                const headTop = this.y - (32 * SCALE);
+                const preferAboveAnchor = Math.round(headTop - 8);
+                const placeBelow = preferAboveAnchor - height < 4;
+
+                let bx = Math.round(this.x);
+                bx = Math.max(Math.ceil(width / 2) + 4, Math.min(LOGICAL_WIDTH - Math.ceil(width / 2) - 4, bx));
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+                ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
+                ctx.lineWidth = 1.5;
+
+                if (placeBelow) {
+                    const by = Math.min(LOGICAL_HEIGHT - height - 4, Math.round(this.y + 12));
                     ctx.translate(bx, by);
-                    const paddingX = 8;
-                    const paddingY = 5;
-                    ctx.font = 'bold 12px "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif';
-                    const metrics = ctx.measureText(this.bubbleText);
-                    const width = Math.ceil(metrics.width) + paddingX * 2;
-                    const height = 16 + paddingY * 2;
-
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.96)';
+                    ctx.beginPath();
+                    ctx.roundRect(-width / 2, 0, width, height, 6);
+                    ctx.fill();
+                    ctx.stroke();
+                    // Tail pointing up toward character
+                    ctx.beginPath();
+                    ctx.moveTo(-5, 1);
+                    ctx.lineTo(5, 1);
+                    ctx.lineTo(0, -5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.fillStyle = '#0f172a';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(this.bubbleText, 0, Math.round(height / 2));
+                } else {
+                    const by = preferAboveAnchor;
+                    ctx.translate(bx, by);
                     ctx.beginPath();
                     ctx.roundRect(-width / 2, -height, width, height, 6);
                     ctx.fill();
-                    ctx.strokeStyle = 'rgba(15, 23, 42, 0.85)';
-                    ctx.lineWidth = 1.5;
                     ctx.stroke();
-
                     ctx.beginPath();
                     ctx.moveTo(-5, -1);
                     ctx.lineTo(5, -1);
                     ctx.lineTo(0, 5);
                     ctx.closePath();
                     ctx.fill();
-
                     ctx.fillStyle = '#0f172a';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(this.bubbleText, 0, Math.round(-height / 2));
-                    ctx.restore();
                 }
+                ctx.restore();
             }
         }
 
@@ -1175,10 +1376,14 @@
                 const meta = AGENT_META[c.id] || { role: c.role, color: '#94a3b8', badge: 'bg-slate-800 text-slate-300 border-slate-600' };
                 const roomName = c.defaultRoom || '未分配';
                 const isRest = roomName === REST_ROOM_NAME;
-                const statusLabel = c.action === ACTIONS.WALKING
-                    ? '移動中'
-                    : (c.sitting ? '入座執勤' : (isRest ? '休息待命' : '房內巡航'));
-                const bubble = c.isTalking && c.bubbleText ? c.bubbleText : '—';
+                const statusLabel = c.goingToSleep
+                    ? '找位置補眠…'
+                    : (c.action === ACTIONS.WALKING
+                        ? '移動中'
+                        : (c.sleeping
+                            ? '💤 熟睡中'
+                            : (c.sitting ? '入座執勤' : (isRest ? '休息待命' : '房內巡航'))));
+                const bubble = c.sleeping ? 'Zzz…' : (c.isTalking && c.bubbleText ? c.bubbleText : '—');
 
                 return `
                     <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 flex flex-col gap-1">
@@ -1267,19 +1472,26 @@
             const elapsed = Math.floor((Date.now() - startTime) / 1000);
             document.getElementById('timer').textContent = elapsed;
 
-            // 角色頭頂高解析度中文名牌
+            // 角色名牌：上方空間夠就畫頭頂，否則改畫腳邊（避免蓋臉／被裁切）
             ctx.save();
             ctx.font = 'bold 12px "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            const nameTagH = 18;
             for (const char of window.characters) {
+                if (char.isTalking && char.bubbleText) continue;
                 const text = char.name;
                 const nameWidth = Math.ceil(ctx.measureText(text).width);
-                const nx = Math.round(char.x);
-                const textY = Math.round(char.y - 46);
+                const tagW = nameWidth + 12;
+                let nx = Math.round(char.x);
+                nx = Math.max(Math.ceil(tagW / 2) + 2, Math.min(LOGICAL_WIDTH - Math.ceil(tagW / 2) - 2, nx));
+                const preferY = Math.round(char.y - (32 * SCALE) - 12);
+                const textY = preferY < nameTagH / 2 + 2
+                    ? Math.min(LOGICAL_HEIGHT - nameTagH / 2 - 2, Math.round(char.y + 12))
+                    : preferY;
                 ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
                 ctx.beginPath();
-                ctx.roundRect(nx - nameWidth / 2 - 6, textY - 9, nameWidth + 12, 18, 4);
+                ctx.roundRect(nx - tagW / 2, textY - nameTagH / 2, tagW, nameTagH, 4);
                 ctx.fill();
                 ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
                 ctx.lineWidth = 1;
@@ -1288,6 +1500,12 @@
                 ctx.fillText(text, nx, textY);
             }
             ctx.restore();
+
+            // 氣泡與睡眠 Zzz 最後繪製，避免被房間門牌蓋住
+            for (const char of window.characters) {
+                char.drawSleepZzz();
+                char.drawSpeechBubble();
+            }
             requestAnimationFrame(gameLoop);
         }
 
@@ -1355,6 +1573,8 @@
 
         function bindAgentToRoom(char, roomName) {
             if (!roomName) return;
+            char.wakeUp();
+            char.restEnteredAt = roomName === REST_ROOM_NAME ? Date.now() : 0;
             char.defaultRoom = roomName;
             char.commandTargetRoom = roomName;
             char.roomBound = true;
@@ -1534,7 +1754,22 @@
         const logEntries = document.getElementById('logEntries');
 
         let logFilters = { 0: true, 1: true, 2: true, 3: true, 4: true, 5: true };
+        let tradeOnlyLog = true;
         let allLogs = [];
+
+        const toggleTradeOnlyEl = document.getElementById('toggleTradeOnlyLog');
+        const logCountBadgeEl = document.getElementById('logCountBadge');
+        if (toggleTradeOnlyEl) {
+            toggleTradeOnlyEl.addEventListener('change', (e) => {
+                tradeOnlyLog = !!e.target.checked;
+                renderLogs();
+            });
+        }
+
+        function isTradeLogEntry(log) {
+            const text = `${log.msg || ''} ${log.action || ''}`;
+            return /\b(BUY|SELL)\b/i.test(text) || /(買進|賣出|買單|賣單|做多|做空)/.test(text);
+        }
 
         function renderLogFilterButtons() {
             const container = document.getElementById('logFilterContainer');
@@ -1562,9 +1797,21 @@
 
         function renderLogs() {
             logEntries.innerHTML = '';
-            const filteredLogs = allLogs.filter(log => logFilters[log.agent] ?? true);
+            const filteredLogs = allLogs.filter(log => {
+                if (!(logFilters[log.agent] ?? true)) return false;
+                if (tradeOnlyLog && !isTradeLogEntry(log)) return false;
+                return true;
+            });
+            if (logCountBadgeEl) {
+                logCountBadgeEl.textContent = tradeOnlyLog
+                    ? `${filteredLogs.length} / ${allLogs.length} 筆`
+                    : `${filteredLogs.length} 筆`;
+            }
             if (filteredLogs.length === 0) {
-                logEntries.innerHTML = '<div class="text-slate-500 text-center py-6">目前尚無活動紀錄</div>';
+                const emptyHint = tradeOnlyLog && allLogs.length > 0
+                    ? `目前尚無 BUY / SELL 買賣紀錄（共略過 ${allLogs.length} 筆一般移動紀錄）`
+                    : '目前尚無活動紀錄';
+                logEntries.innerHTML = `<div class="text-slate-500 text-center py-6">${emptyHint}</div>`;
                 return;
             }
             filteredLogs.forEach(log => {

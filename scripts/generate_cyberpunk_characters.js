@@ -347,6 +347,54 @@ function encodeRgbaPng(buf, w, h) {
   ]);
 }
 
+function generateFavicon() {
+  const size = 32;
+  const fav = createCanvas(size, size);
+  const agent = AGENTS[0]; // 數據領航員 (Cyberpunk Cyan theme)
+
+  // Rounded dark cyberpunk badge background with neon cyan border
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const dx = Math.min(x, size - 1 - x);
+      const dy = Math.min(y, size - 1 - y);
+      if (dx + dy < 3) continue; // rounded corners
+      const isBorder = x <= 1 || y <= 1 || x >= size - 2 || y >= size - 2 || dx + dy === 3;
+      if (isBorder) {
+        fav.set(x, y, [56, 189, 248], 255);
+      } else {
+        fav.set(x, y, [15, 23, 42], 255);
+      }
+    }
+  }
+
+  // Draw 16x32 character bust (y: 3..18 -> 16x16), scaled 2x into 32x32
+  const single = createCanvas(FW, FH);
+  drawFrame(single, agent, 0, 0, 0, 0);
+  for (let sy = 3; sy < 18; sy++) {
+    for (let sx = 0; sx < FW; sx++) {
+      const idx = (sy * FW + sx) * 4;
+      const a = single.buf[idx + 3];
+      if (a === 0) continue;
+      const rgb = [single.buf[idx], single.buf[idx + 1], single.buf[idx + 2]];
+      const dy = (sy - 3) * 2 + 2;
+      const dx = sx * 2;
+      for (let oy = 0; oy < 2; oy++) {
+        for (let ox = 0; ox < 2; ox++) {
+          const tx = dx + ox;
+          const ty = dy + oy;
+          if (tx >= 2 && tx < size - 2 && ty >= 2 && ty < size - 2) {
+            fav.set(tx, ty, rgb, a);
+          }
+        }
+      }
+    }
+  }
+
+  const favFile = path.join(BASE_DIR, 'assets', 'favicon.png');
+  fs.writeFileSync(favFile, encodeRgbaPng(fav.buf, size, size));
+  console.log(`Generated pixel favicon ${favFile}`);
+}
+
 function main() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   for (const agent of AGENTS) {
@@ -361,6 +409,7 @@ function main() {
     fs.writeFileSync(outFile, pngBuf);
     console.log(`Generated crisp RPG sprite ${outFile} — ${agent.name}`);
   }
+  generateFavicon();
 }
 
 main();
