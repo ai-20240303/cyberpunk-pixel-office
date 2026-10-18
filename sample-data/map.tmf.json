@@ -1,8 +1,8 @@
 {
   "preset": "tmf",
   "scene": {
-    "title": "微台戰情室 · TMF Cyberpunk Pixel Office",
-    "dashboardTitle": "微台戰情室控制台",
+    "title": "Cyberpunk Pixel Office · 事件驅動多代理像素戰情室",
+    "dashboardTitle": "Cyberpunk Pixel Office · 像素戰情室控制台",
     "panelSubtitle": "6 位微台 AI 代理即時動態",
     "restRoom": "休息房"
   },

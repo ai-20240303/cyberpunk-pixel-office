@@ -1,8 +1,6 @@
-# Cyberpunk Pixel Office (`cyberpunk-pixel-office`)
+# Cyberpunk Pixel Office（事件驅動多代理像素戰情室）
 
-**「100% 通用型、REST 事件驅動的多代理虛擬辦公室（Event-Driven Multi-Agent Pixel Office）」**。
-
-預設開箱即用搭載 **微台指期貨戰情室（`PRESET=tmf` / `quant-trading`）** 主題樣板，同時將**「業務邏輯」與「視覺渲染／空間尋路引擎」徹底解耦**，可透過單一環境變數或 JSON 樣板無限擴充至任何多代理（Multi-Agent）協作場景。
+> **預設搭載「微台指期貨戰情室（`PRESET=tmf` / `quant-trading`）」主題樣板 — 100% 業務邏輯與視覺引擎解耦，可透過單一環境變數或 JSON 樣板一鍵切換至任何多代理（Multi-Agent）協作場景。**
 
 本專案基於開源專案 **[BTCx100/pixel-office](https://github.com/BTCx100/pixel-office)**（源自 `piraminet/pixel-office` 與 Pablo Delucca 之 `pixel-agents` 概念）進行深度重構與資料驅動化改造；所有美術圖檔（辦公室底圖與 6 位賽博龐克角色 Sprite Sheet）與繁體中文控制面板皆為 **100% 專案自製（由 `scripts/` 腳本程序化生成）**，無第三方付費圖塊授權限制。
 

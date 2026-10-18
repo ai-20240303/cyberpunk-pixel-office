@@ -1,9 +1,11 @@
-# Pixel Office（BTCx100）— 通用多代理引擎 & 微台指期貨預設樣板 (`PRESET=tmf`) 試玩
+# Cyberpunk Pixel Office（事件驅動多代理像素戰情室）— 試玩與操作指南
+
+> **預設搭載「微台指期貨戰情室（`PRESET=tmf` / `quant-trading`）」主題樣板 — 100% 業務邏輯與視覺引擎解耦，可透過單一環境變數或 JSON 樣板一鍵切換至任何多代理（Multi-Agent）協作場景。**
 
 Upstream: https://github.com/BTCx100/pixel-office
 
-> **架構定位**：`cyberpunk-pixel-office` 是 **100% 通用型、REST 事件驅動的多代理虛擬辦公室（Event-Driven Multi-Agent Pixel Office）**。引擎層本身完全不綁定任何期貨或金融交易程式碼，所有房間定義、碰撞格、角色職稱與閒置台詞（`idleLines`）皆由 `/app/data/map.json` 與 `/app/data/agents.json` 資料驅動。
-> **預設樣板（Default Preset）**：開箱預設載入 **微台指期貨戰情室（`PRESET=tmf`，別名 `quant-trading`）**，未來只需在 `sample-data/` 新增 `map.<preset>.json` 與 `agents.<preset>.json`，即可一鍵擴充切換至 `podcast-studio`、`dev-team` 等任何多代理場景！
+- **架構定位**：`cyberpunk-pixel-office` 是 **100% 通用型、REST 事件驅動的多代理像素戰情室（Event-Driven Multi-Agent Pixel Warroom）**。引擎層本身完全不綁定任何期貨或金融交易程式碼，所有房間定義、碰撞格、角色職稱與閒置台詞（`idleLines`）皆由 `/app/data/map.json` 與 `/app/data/agents.json` 資料驅動。
+- **預設樣板（Default Preset）**：開箱預設載入 **微台指期貨戰情室（`PRESET=tmf`，別名 `quant-trading`）**，未來只需在 `sample-data/` 新增 `map.<preset>.json` 與 `agents.<preset>.json`，即可一鍵擴充切換至 `podcast-studio`、`dev-team` 等任何多代理場景！
 
 ## 啟動（隨根目錄 `docker compose up -d` 常駐）
 

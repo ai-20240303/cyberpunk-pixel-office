@@ -137,8 +137,8 @@ const loadPresetDefaults = (presetName = activePreset) => {
         { id: 6, name: '研究室', x: 16, y: 20, handoffSeat: { x: 16, y: 22 }, handoffWalkaway: { x: 15, y: 19 }, tiles: [] },
       ];
   const seedScene = seedMap.scene || {
-    title: '微台戰情室 · TMF Cyberpunk Pixel Office',
-    dashboardTitle: '微台戰情室控制台',
+    title: 'Cyberpunk Pixel Office · 事件驅動多代理像素戰情室',
+    dashboardTitle: 'Cyberpunk Pixel Office · 像素戰情室控制台',
     panelSubtitle: '6 位微台 AI 代理即時動態',
     restRoom: '休息房',
   };

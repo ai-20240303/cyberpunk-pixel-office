@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
 LABEL org.opencontainers.image.title="cyberpunk-pixel-office" \
-      org.opencontainers.image.description="100% Generic Event-Driven Multi-Agent Cyberpunk Pixel Office (Default Preset: TMF Micro Taiwan Index Futures)" \
+      org.opencontainers.image.description="Cyberpunk Pixel Office（事件驅動多代理像素戰情室）— Default Preset: TMF Micro Taiwan Index Futures" \
       org.opencontainers.image.source="https://github.com/ai-20240303/cyberpunk-pixel-office"
 
 ENV TZ=Asia/Taipei \

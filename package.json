@@ -1,7 +1,7 @@
 {
   "name": "cyberpunk-pixel-office",
   "version": "2.0.0",
-  "description": "100% first-party Cyberpunk Pixel Warroom HUD for AI Quantitative Trading",
+  "description": "Cyberpunk Pixel Office（事件驅動多代理像素戰情室）— 100% Generic Event-Driven Multi-Agent Pixel Warroom (Default Preset: TMF Quant Trading)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
